@@ -1,0 +1,52 @@
+[project]
+name = "grid2op-classification"
+version = "0.1.0"
+authors = [
+  {name = "Viktor Todosijević", email = "todosijevicviktor998@gmail.com"},
+]
+description = "Classify which substation the topology greedy agent will act upon"
+readme = "README.md"
+requires-python = ">=3.14"
+dependencies = [
+    "grid2op>=1.12.3",
+    "lightsim2grid>=0.12.2",
+    "matplotlib>=3.10.8",
+    "mypy>=1.19.1",
+    "pre-commit>=4.5.1",
+]
+
+[tool.pylint]
+disable = "C0114,C0115,C0116,R0903,R1710,W1203"
+max-line-length = 120
+max-locals = 20
+max-args = 16
+max-attributes = 20
+ignore = [
+    ".git",
+    "migrations",
+    "__pycache__"
+]
+
+[tool.flake8]
+max-line-length = 120
+ignore = ["E203", "E266", "E501", "W503"]
+docstring-convention = "numpy"
+max-complexity = 20
+per-file-ignores = []
+exclude = [
+    ".git",
+    "migrations",
+    "__pycache__"
+]
+
+[tool.black]
+line-length = 120
+target-version = ["py313"]
+
+[tool.isort]
+profile = "black"
+
+[tool.flynt]
+line-length = 120
+transform-concats = true
+verbose = true
