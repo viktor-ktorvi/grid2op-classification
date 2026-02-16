@@ -26,7 +26,7 @@ from grid2op.Reward import (  # noqa: F401
 from lightsim2grid import LightSimBackend
 from matplotlib import pyplot as plt
 
-from src.reward import MaxCurrentReward
+from src.reward import MaxCurrentReward, OverloadReward  # noqa: F401
 
 
 def simulate(
@@ -111,8 +111,9 @@ def main() -> None:
     axs.plot(do_nothing_currents, label="do nothing", linewidth=3)
 
     for reward_class in [
-        LinesCapacityReward,
+        # LinesCapacityReward,
         MaxCurrentReward,
+        OverloadReward,
         # # AlarmReward,
         # AlertReward,
         # # BridgeReward,
