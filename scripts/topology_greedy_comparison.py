@@ -73,7 +73,7 @@ def simulate(
         obs, reward, done, info = env.step(action)
 
         max_currents.append(max_current)
-        print(f"{agent_name=}, {step_counter=}, {max_current=:2.3f}")
+        print(f"{step_counter=}, {agent_name=}, {reward_class.__name__=}, {max_current=:2.3f}")
         step_counter += 1
 
     return max_currents
@@ -88,8 +88,8 @@ def main() -> None:
         }
     )
     RANDOM_SEED = 0
-    MAX_STEPS = 200
-    CURRENT_THRESHOLD = 0.9
+    MAX_STEPS = 2000
+    CURRENT_THRESHOLD = 0.8
     random.seed(RANDOM_SEED)
     env_name = "l2rpn_case14_sandbox"
     # env_name = "l2rpn_icaps_2021_small"
@@ -113,7 +113,7 @@ def main() -> None:
         # DistanceReward,
         # EconomicReward,
         # EpisodeDurationReward,
-        FlatReward,
+        # FlatReward,
         # GameplayReward,
         # IncreasingFlatReward,
         # L2RPNReward,
