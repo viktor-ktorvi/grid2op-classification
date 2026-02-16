@@ -34,8 +34,11 @@ def simulate(
     env_name: str,
     MAX_STEPS: int,
     reward_class: Callable = LinesCapacityReward,
+    current_threshold: float = 0.0,
+    random_seed: int = 0,
 ) -> list[float]:
     env = grid2op.make(env_name, reward_class=reward_class, backend=LightSimBackend())
+    env.seed(random_seed)
 
     max_timeseries_id = len(env.chronics_handler.subpaths) - 1
     if agent_name == "do nothing":
@@ -44,6 +47,9 @@ def simulate(
         agent = TopologyGreedy(env.action_space)
     else:
         raise ValueError(f"{agent_name=}")
+    agent.seed(random_seed)
+
+    default_do_nothing_agent = DoNothingAgent(env.action_space)
 
     obs = env.reset(
         options={
@@ -58,7 +64,11 @@ def simulate(
     step_counter = 0
     while not done:
         max_current = obs.rho.max()
-        action = agent.act(obs, reward, done)
+
+        if max_current > current_threshold:
+            action = agent.act(obs, reward, done)
+        else:
+            action = default_do_nothing_agent.act(obs, reward, done)
 
         obs, reward, done, info = env.step(action)
 
@@ -79,12 +89,15 @@ def main() -> None:
     )
     RANDOM_SEED = 0
     MAX_STEPS = 200
+    CURRENT_THRESHOLD = 0.9
     random.seed(RANDOM_SEED)
     env_name = "l2rpn_case14_sandbox"
     # env_name = "l2rpn_icaps_2021_small"
     # env_name = "l2rpn_idf_2023"
 
-    do_nothing_currents = simulate(agent_name="do nothing", env_name=env_name, MAX_STEPS=MAX_STEPS)
+    do_nothing_currents = simulate(
+        agent_name="do nothing", env_name=env_name, MAX_STEPS=MAX_STEPS, random_seed=RANDOM_SEED
+    )
 
     fig, axs = plt.subplots(1, 1)
     axs.plot(do_nothing_currents, label="do nothing", linewidth=3)
@@ -114,6 +127,8 @@ def main() -> None:
                 env_name=env_name,
                 MAX_STEPS=MAX_STEPS,
                 reward_class=reward_class,
+                current_threshold=CURRENT_THRESHOLD,
+                random_seed=RANDOM_SEED,
             ),
             label=reward_class.__name__,
             linestyle=random.choice(["dotted", "dashed", "dashdot"]),
