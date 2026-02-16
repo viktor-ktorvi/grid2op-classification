@@ -131,10 +131,21 @@ def to_pyg_data(data_sample: dict, env: dict) -> Data:
     edge_index = np.hstack((line_edge_index, gen_edge_index, load_edge_index))
     edge_attr = np.vstack((line_edge_attr, gen_edge_attr, load_edge_attr))
 
-    substation_indicator = np.zeros((x_matrix.shape[0], 1))
+    n_nodes = x_matrix.shape[0]
+
+    substation_indicator = np.zeros((n_nodes, 1))
     substation_indicator[:n_sub] = 1
 
-    y = np.zeros((x_matrix.shape[0], 1))
+    gen_indicator = np.zeros((n_nodes, 1))
+    gen_indicator[n_sub : n_sub + n_gen] = 1
+
+    load_indicator = np.zeros((n_nodes, 1))
+    load_indicator[n_sub + n_gen : n_sub + n_gen + n_load] = 1
+
+    if np.sum(substation_indicator) + np.sum(gen_indicator) + np.sum(load_indicator) != n_nodes:
+        raise RuntimeError("Indicators don't sum up to the number of nodes.")
+
+    y = np.zeros((n_nodes, 1))
     y[data_sample["substation"]] = 1
 
     data = Data(
@@ -143,6 +154,8 @@ def to_pyg_data(data_sample: dict, env: dict) -> Data:
         edge_index=torch.LongTensor(edge_index),
         edge_attr=torch.tensor(edge_attr),
         substation_indicator=torch.tensor(substation_indicator, dtype=torch.bool),
+        gen_indicator=torch.tensor(gen_indicator, dtype=torch.bool),
+        load_indicator=torch.tensor(load_indicator, dtype=torch.bool),
     )
 
     return data
