@@ -32,6 +32,7 @@ from src.reward import MaxCurrentReward
 def simulate(
     agent_name: str,
     env_name: str,
+    time_series_id: int,
     MAX_STEPS: int,
     reward_class: Callable = LinesCapacityReward,
     current_threshold: float = 0.0,
@@ -40,7 +41,6 @@ def simulate(
     env = grid2op.make(env_name, reward_class=reward_class, backend=LightSimBackend())
     env.seed(random_seed)
 
-    max_timeseries_id = len(env.chronics_handler.subpaths) - 1
     if agent_name == "do nothing":
         agent = DoNothingAgent(env.action_space)
     elif agent_name == "topology greedy":
@@ -53,7 +53,7 @@ def simulate(
 
     obs = env.reset(
         options={
-            "time serie id": random.choice(range(max_timeseries_id)),
+            "time serie id": time_series_id,
             "max step": MAX_STEPS,
         }
     )
@@ -95,8 +95,16 @@ def main() -> None:
     # env_name = "l2rpn_icaps_2021_small"
     # env_name = "l2rpn_idf_2023"
 
+    # max_timeseries_id = len(env.chronics_handler.subpaths) - 1
+    # random.choice(range(max_timeseries_id))
+    time_series_id = 0
+
     do_nothing_currents = simulate(
-        agent_name="do nothing", env_name=env_name, MAX_STEPS=MAX_STEPS, random_seed=RANDOM_SEED
+        agent_name="do nothing",
+        env_name=env_name,
+        time_series_id=time_series_id,
+        MAX_STEPS=MAX_STEPS,
+        random_seed=RANDOM_SEED,
     )
 
     fig, axs = plt.subplots(1, 1)
@@ -125,6 +133,7 @@ def main() -> None:
             simulate(
                 agent_name="topology greedy",
                 env_name=env_name,
+                time_series_id=time_series_id,
                 MAX_STEPS=MAX_STEPS,
                 reward_class=reward_class,
                 current_threshold=CURRENT_THRESHOLD,
