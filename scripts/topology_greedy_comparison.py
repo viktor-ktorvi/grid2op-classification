@@ -4,7 +4,7 @@ from typing import Callable
 import grid2op
 import matplotlib
 from grid2op.Agent import DoNothingAgent, TopologyGreedy
-from grid2op.Reward import (
+from grid2op.Reward import (  # noqa: F401
     AlarmReward,
     AlertReward,
     BaseReward,
@@ -69,7 +69,7 @@ def simulate(
     return max_currents
 
 
-def main():
+def main() -> None:
     matplotlib.rcParams.update(
         {
             "font.size": 12,
