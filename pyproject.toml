@@ -6,13 +6,17 @@ authors = [
 ]
 description = "Classify which substation the topology greedy agent will act upon"
 readme = "README.md"
-requires-python = ">=3.14"
+requires-python = ">=3.13"
 dependencies = [
     "grid2op>=1.12.3",
     "lightsim2grid>=0.12.2",
     "matplotlib>=3.10.8",
     "mypy>=1.19.1",
     "pre-commit>=4.5.1",
+    "torch==2.8.0",
+    "torch-geometric>=2.7.0",
+    "torchaudio==2.8.0",
+    "torchvision==0.23.0",
 ]
 
 [tool.pylint]
@@ -50,3 +54,20 @@ profile = "black"
 line-length = 120
 transform-concats = true
 verbose = true
+
+[[tool.uv.index]]
+name = "pytorch-cu129"
+url = "https://download.pytorch.org/whl/cu129"
+explicit = true
+
+[tool.uv.sources]
+torch = [
+  { index = "pytorch-cu129", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
+]
+torchvision = [
+  { index = "pytorch-cu129", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
+]
+
+torchaudio = [
+  { index = "pytorch-cu129", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
+]
