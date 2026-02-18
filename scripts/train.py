@@ -186,6 +186,8 @@ class LightningModel(LightningModule):
 
     def inference(self, batch: Data, dataset_type: Literal["train", "val", "test"]) -> Tensor:
         out = self.model(batch)
+
+        # TODO class weights
         loss: Tensor = self.criterion(input=out, target=batch.y)
         self.log(f"{dataset_type}/loss", loss, on_step=False, on_epoch=True, prog_bar=True)
 
