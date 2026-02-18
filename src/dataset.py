@@ -145,14 +145,12 @@ def to_pyg_data(data_sample: dict, env: dict) -> Data:
     if np.sum(substation_indicator) + np.sum(gen_indicator) + np.sum(load_indicator) != n_nodes:
         raise RuntimeError("Indicators don't sum up to the number of nodes.")
 
-    y = np.zeros((n_nodes, 1))
-    y[data_sample["substation"]] = 1
-
+    dtype = torch.get_default_dtype()
     data = Data(
-        x=torch.tensor(x_matrix),
-        y=torch.tensor(y),
+        x=torch.tensor(x_matrix, dtype=dtype),
+        y=torch.tensor(data_sample["substation"]),  # index [0, n_sub - 1] (that's what nn.CrossEntropyLoss likes)
         edge_index=torch.LongTensor(edge_index),
-        edge_attr=torch.tensor(edge_attr),
+        edge_attr=torch.tensor(edge_attr, dtype=dtype),
         substation_indicator=torch.tensor(substation_indicator, dtype=torch.bool),
         gen_indicator=torch.tensor(gen_indicator, dtype=torch.bool),
         load_indicator=torch.tensor(load_indicator, dtype=torch.bool),

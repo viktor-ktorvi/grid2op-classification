@@ -9,14 +9,17 @@ readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
     "grid2op>=1.12.3",
+    "lightning>=2.6.1",
     "lightsim2grid>=0.12.2",
     "matplotlib>=3.10.8",
     "mypy>=1.19.1",
     "pre-commit>=4.5.1",
     "pydot>=4.0.1",
+    "scikit-learn>=1.8.0",
     "torch==2.8.0",
     "torch-geometric>=2.7.0",
     "torchaudio==2.8.0",
+    "torchmetrics>=1.8.2",
     "torchvision==0.23.0",
 ]
 
