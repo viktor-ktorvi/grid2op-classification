@@ -60,8 +60,20 @@ class InputStatistics:
     x: Statistics
     edge_attr: Statistics
 
-    def __init__(self, train_batch: Data):
-        x_mean, x_std = calculate_statistics(train_batch.x)
+    def __init__(self, train_batch: Data, *, type_specific: bool = False):
+        if type_specific:
+            gen_mean, gen_std = calculate_statistics(train_batch.x[train_batch.gen_indicator.flatten(), : NodeX.load_p])
+            load_mean, load_std = calculate_statistics(
+                train_batch.x[train_batch.load_indicator.flatten(), NodeX.load_p : NodeX.shunt_p]
+            )
+            shunt_mean, shunt_std = calculate_statistics(
+                train_batch.x[train_batch.substation_indicator.flatten(), NodeX.shunt_p :]
+            )
+
+            x_mean = torch.hstack((gen_mean, load_mean, shunt_mean))
+            x_std = torch.hstack((gen_std, load_std, shunt_std))
+        else:
+            x_mean, x_std = calculate_statistics(train_batch.x)
         edge_attr_mean, edge_attr_std = calculate_statistics(train_batch.edge_attr)
 
         self.x = Statistics(mean=x_mean, std=x_std)
@@ -209,9 +221,7 @@ def main() -> None:
     training_dataset, validation_dataset = train_test_split(data_list, test_size=0.3)
 
     train_batch = next(iter(DataLoader(training_dataset, batch_size=len(training_dataset))))
-    # TODO bilo bi dobro da nule ne idu u normalizaciju
-    #  da se x_mean_gen racuna samo za gen, itd...
-    input_statistics = InputStatistics(train_batch)
+    input_statistics = InputStatistics(train_batch, type_specific=True)
 
     model = Model(
         num_classes=num_classes,
