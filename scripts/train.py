@@ -17,6 +17,11 @@ from torch import Tensor, nn
 from torch_geometric.data import Data
 from torch_geometric.loader import DataLoader
 from torch_geometric.nn import GAT, MLP
+from torch_geometric.transforms import (
+    AddLaplacianEigenvectorPE,
+    AddRandomWalkPE,
+    LineGraph,
+)
 from torchmetrics import Accuracy
 
 from src import DATA_PATH
@@ -67,11 +72,13 @@ class InputStatistics:
                 train_batch.x[train_batch.load_indicator.flatten(), NodeX.load_p : NodeX.shunt_p]
             )
             shunt_mean, shunt_std = calculate_statistics(
-                train_batch.x[train_batch.substation_indicator.flatten(), NodeX.shunt_p :]
+                train_batch.x[train_batch.substation_indicator.flatten(), NodeX.shunt_p : NodeX.shunt_v + 1]
             )
 
-            x_mean = torch.hstack((gen_mean, load_mean, shunt_mean))
-            x_std = torch.hstack((gen_std, load_std, shunt_std))
+            rest_mean, rest_std = calculate_statistics(train_batch.x[:, NodeX.shunt_v + 1 :])
+
+            x_mean = torch.hstack((gen_mean, load_mean, shunt_mean, rest_mean))
+            x_std = torch.hstack((gen_std, load_std, shunt_std, rest_std))
         else:
             x_mean, x_std = calculate_statistics(train_batch.x)
         edge_attr_mean, edge_attr_std = calculate_statistics(train_batch.edge_attr)
@@ -97,6 +104,8 @@ class Scaler(nn.Module):
 class Model(nn.Module):
     def __init__(
         self,
+        x_dim: int,
+        edge_attr_dim: int,
         num_classes: int,
         hidden_channels: int,
         num_mlp_layers: int,
@@ -111,7 +120,7 @@ class Model(nn.Module):
         self.edge_attr_scaler = Scaler(mean=input_statistics.edge_attr.mean, std=input_statistics.edge_attr.std)
 
         self.input_mlp_x = MLP(
-            in_channels=len(NodeX),
+            in_channels=x_dim,
             hidden_channels=hidden_channels,
             out_channels=hidden_channels,
             num_layers=num_mlp_layers,
@@ -119,7 +128,7 @@ class Model(nn.Module):
         )
 
         self.input_mlp_edge = MLP(
-            in_channels=len(EdgeX),
+            in_channels=edge_attr_dim,
             hidden_channels=hidden_channels,
             out_channels=hidden_channels,
             num_layers=num_mlp_layers,
@@ -211,6 +220,7 @@ def main() -> None:
     DROPOUT = 0.2
     LEARNING_RATE = 1e-4
     BATCH_SIZE = 256
+    POSITIONAL_ENCODINGS = False
 
     DATASET_PATH = DATA_PATH / "case14_20k"
 
@@ -218,12 +228,42 @@ def main() -> None:
     random.shuffle(data_list)
     data_list = data_list[:MAX_DATA_SAMPLES]
 
+    if POSITIONAL_ENCODINGS:
+        node_graph = data_list[0]
+
+        line_graph = LineGraph()(node_graph)
+
+        # should be fine to use LEs as is, no sign-invariant transform, cause we only calculate one set
+        # cause the topology won't change
+        NUM_LAP_EIG = 30
+        NUM_RANDOM_WALK = 10
+        laplacian_eigenvector_encoding_transform = AddLaplacianEigenvectorPE(k=NUM_LAP_EIG)
+        le_node = laplacian_eigenvector_encoding_transform(node_graph).laplacian_eigenvector_pe
+        le_edge = laplacian_eigenvector_encoding_transform(line_graph).laplacian_eigenvector_pe
+
+        random_walk_encoding_transform = AddRandomWalkPE(walk_length=NUM_RANDOM_WALK)
+        rw_node = random_walk_encoding_transform(node_graph).random_walk_pe
+        rw_edge = random_walk_encoding_transform(line_graph).random_walk_pe
+        # TODO gen i load covorovi ne dobijaju rw, jer nista ne ide ka njima
+
+        for data in data_list:
+            data.x = torch.hstack((data.x, le_node, rw_node))
+            data.edge_attr = torch.hstack((data.edge_attr, le_edge, rw_edge))
+
+        x_dim = len(NodeX) + NUM_LAP_EIG + NUM_RANDOM_WALK
+        edge_attr_dim = len(EdgeX) + NUM_LAP_EIG + NUM_RANDOM_WALK
+    else:
+        x_dim = len(NodeX)
+        edge_attr_dim = len(EdgeX)
+
     training_dataset, validation_dataset = train_test_split(data_list, test_size=0.3)
 
     train_batch = next(iter(DataLoader(training_dataset, batch_size=len(training_dataset))))
     input_statistics = InputStatistics(train_batch, type_specific=True)
 
     model = Model(
+        x_dim=x_dim,
+        edge_attr_dim=edge_attr_dim,
         num_classes=num_classes,
         hidden_channels=HIDDEN_CHANNELS,
         num_mlp_layers=NUM_MLP_LAYERS,
