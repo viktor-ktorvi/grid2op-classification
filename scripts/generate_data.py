@@ -22,7 +22,7 @@ def dump_properties(obj: Any) -> dict[str, np.ndarray | int | float | str]:
 
 def main() -> None:
     RANDOM_SEED = 0
-    MAX_STEPS = 1000
+    MAX_STEPS = 1e6
     CURRENT_THRESHOLD = 0.8
     random.seed(RANDOM_SEED)
     agent_name = "topology greedy"
@@ -30,7 +30,7 @@ def main() -> None:
     # env_name = "l2rpn_icaps_2021_small"
     # env_name = "l2rpn_idf_2023"
 
-    DATASET_PATH = DATA_PATH / "my_dataset"
+    DATASET_PATH = DATA_PATH / "case14_20k"
 
     # delete contents
     if DATASET_PATH.is_dir():
